@@ -114,8 +114,8 @@ int calNoise (noiseStruct *noiseStructure, controlStruct *control)
 
 	noiseStructure->n = control->n; 
 	noiseStructure->whiteLevel = control->whiteLevel; // mJy
-	noiseStructure->nchn = control->nchan; 
-	noiseStructure->nsubint = control->nsub; 
+	noiseStructure->nchn = control->nchan0; 
+	noiseStructure->nsubint = control->nsub0; 
 
 	nchn = noiseStructure->nchn;
 	nsubint = noiseStructure->nsubint;
