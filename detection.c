@@ -121,8 +121,7 @@ int main (int argc, char* argv[])
 			//control.scint_ts = control.tsub/2.0;
 			control.scint_ts = pow(10.0, tdiss[i]);
 			control.tsub = control.scint_ts*2.0;
-			control.nsub = 100;    // nsub >= 2
-			control.nsub0 = (int)(control.T/control.tsub);    // nsub >= 2
+			control.nsub = (int)(control.T/control.tsub);    // nsub >= 2
 
 			for (j=0; j<nf; j++)
 			{
@@ -132,10 +131,9 @@ int main (int argc, char* argv[])
 				//control.nchan = 10;
 				control.scint_freqbw = pow(10.0, fdiss[j]);
 				control.chanBW = control.scint_freqbw*2.0;
-				control.nchan = 100;  // nchan >= 2
-				control.nchan0 = (int)(control.BW/control.chanBW);  // nchan >= 2
+				control.nchan = (int)(control.BW/control.chanBW);  // nchan >= 2
 
-				control.whiteLevel = control.whiteLevel0*sqrt(control.nsub0*control.nchan0);  
+				control.whiteLevel = control.whiteLevel0*sqrt(control.nsub*control.nchan);  
 
 				//printf ("%d %d %lf\n", control.nchan, control.nsub, control.whiteLevel);
 		

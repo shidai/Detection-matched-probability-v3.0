@@ -52,10 +52,8 @@ typedef struct controlStruct {
 	double cFreq;  // observing central frequency
 	double tsub;  // subintegration time
 	int nsub;  // number of subintegrations
-	int nsub0;  // number of subintegrations
 	double chanBW;  // subchannel bandwidth
 	int nchan; // number of subchannels
-	int nchan0; // number of subchannels
 
 	double scint_freqbw;   // scintillation bandwidth
 	double scint_ts;       // scintillation timescale
@@ -114,8 +112,8 @@ int calNoise (noiseStruct *noiseStructure, controlStruct *control)
 
 	noiseStructure->n = control->n; 
 	noiseStructure->whiteLevel = control->whiteLevel; // mJy
-	noiseStructure->nchn = control->nchan0; 
-	noiseStructure->nsubint = control->nsub0; 
+	noiseStructure->nchn = control->nchan; 
+	noiseStructure->nsubint = control->nsub; 
 
 	nchn = noiseStructure->nchn;
 	nsubint = noiseStructure->nsubint;
