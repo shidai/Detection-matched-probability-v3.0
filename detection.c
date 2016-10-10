@@ -14,6 +14,7 @@ int main (int argc, char* argv[])
 	//int id;  //  process rank
 	//int p;   //  number of processes
 	//int num;
+	long seed;
 	int nMax;
 
 	//MPI_Init (&argc, &argv);
@@ -145,7 +146,12 @@ int main (int argc, char* argv[])
 				
 				acfStructure.probability = 1.0;
 					
+				// initialize the parameters
 				calculateScintScale (&acfStructure, &control);
+
+				// simulate n dynamic spectrum and noise
+				seed = TKsetSeed();
+				simDynSpec (&acfStructure, seed);
 
 				nMax = 0;
 				while (fabs(acfStructure.probability-0.8) >= control.precision && nMax <= 100)

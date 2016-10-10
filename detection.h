@@ -26,6 +26,7 @@ typedef struct acfStruct {
 	int nsubint;
 
 	double **dynSpec; // dynamic spectrum 
+	double **dynSpecNoise; // dynamic spectrum noise
 
 	float *dynPlot; // dynamic spectrum for pgplot
 
@@ -73,7 +74,7 @@ typedef struct controlStruct {
 void deallocateMemory (acfStruct *acfStructure);
 void allocateMemory (acfStruct *acfStructure);
 int simDynSpec (acfStruct *acfStructure, long seed);
-int winDynSpec (acfStruct *acfStructure, long seed);
+int winDynSpec (acfStruct *acfStructure, int index);
 int calculateScintScale (acfStruct *acfStructure, controlStruct *control);
 int calculateNDynSpec (acfStruct *acfStructure, controlStruct *control, noiseStruct *noiseStructure);
 float find_peak_value (int n, float *s);
@@ -192,7 +193,6 @@ int calThreshold (noiseStruct *noiseStructure, float *var_n)
 
 int calculateNDynSpec (acfStruct *acfStructure, controlStruct *control, noiseStruct *noiseStructure)
 {
-	long seed;
 	int i;
 
 	int n = acfStructure->n;
@@ -210,11 +210,7 @@ int calculateNDynSpec (acfStruct *acfStructure, controlStruct *control, noiseStr
 	num = 0;
 	for (i=0; i<acfStructure->n; i++)
 	{
-		seed = TKsetSeed();
-	
-		simDynSpec (acfStructure, seed);
-
-		winDynSpec (acfStructure, seed);
+		winDynSpec (acfStructure, i);
 		//printf ("Make DynSpec %d\n", i);
 		
 		// calculate the variance
@@ -317,12 +313,15 @@ void allocateMemory (acfStruct *acfStructure)
 	int i;
 	int nsub = acfStructure->nsubint;
 	int nchn = acfStructure->nchn;
+	int n = acfStructure->n;
 	
-	acfStructure->dynSpec = (double **)malloc(sizeof(double *)*nchn);
+	acfStructure->dynSpec = (double **)malloc(sizeof(double *)*n);
+	acfStructure->dynSpecNoise = (double **)malloc(sizeof(double *)*n);
 
-	for (i = 0; i < nchn; i++)
+	for (i = 0; i < n; i++)
 	{
-		acfStructure->dynSpec[i] = (double *)malloc(sizeof(double)*nsub);
+		acfStructure->dynSpec[i] = (double *)malloc(sizeof(double)*nsub*nchn);
+		acfStructure->dynSpecNoise[i] = (double *)malloc(sizeof(double)*nsub*nchn);
 	}
 	
 	acfStructure->dynPlot = (float *)malloc(sizeof(float)*nsub*nchn);
@@ -330,14 +329,15 @@ void allocateMemory (acfStruct *acfStructure)
 
 void deallocateMemory (acfStruct *acfStructure)
 {
-	//int n = acfStructure->n; // number of dynamic spectrum
-	int nchn = acfStructure->nchn;
+	int n = acfStructure->n; // number of dynamic spectrum
+	//int nchn = acfStructure->nchn;
 	//int nchn = acfStructure->nchn;
 	
 	int i;
-	for (i = 0; i < nchn; i++)
+	for (i = 0; i < n; i++)
 	{
 		free(acfStructure->dynSpec[i]);
+		free(acfStructure->dynSpecNoise[i]);
 	}
 
 	//for (i = 0; i < nchn; i++)
@@ -370,12 +370,12 @@ int simDynSpec (acfStruct *acfStructure, long seed)
 {
 	int nchn = acfStructure->nchn;
 	int nsub = acfStructure->nsubint;
+	int num = acfStructure->n;
 
 	int i;
 	int j;
 
-	int n = 0;
-	double sum = 0.0;
+	double sum;
 
 	//printf ("Simulating dynamic spectrum\n");
 	//seed = TKsetSeed();
@@ -384,59 +384,51 @@ int simDynSpec (acfStruct *acfStructure, long seed)
 	/////////////////////////////////////////////////////////////////////////////////
 
 	// form the matrix and normalize
-	for (i = 0; i < nchn; i++)
+	for (i = 0; i < num; i++)
 	{
-		for (j = 0; j < nsub; j++)
+		sum = 0.0;
+		for (j = 0; j < nsub*nchn; j++)
 		{
 			acfStructure->dynSpec[i][j] = pow(TKgaussDev(&seed),2.0)+pow(TKgaussDev(&seed),2.0);
+			acfStructure->dynSpecNoise[i][j] = acfStructure->whiteLevel*TKgaussDev(&seed);
 			//fprintf (fp, "%lf  ", acfStructure->dynSpec[i][j]);
 			sum += acfStructure->dynSpec[i][j];
-			n++;
 		}
-		//fprintf (fp, "\n");
-	}
 
-	sum = sum/n;
+		sum = sum/(nsub*nchn);
+		//printf ("Normalization %.10lf\n",sum);
 
-	//printf ("Normalization %.10lf\n",sum);
-	for (i = 0; i < nchn; i++)
-	{
-		for (j = 0; j < nsub; j++)
+		for (j = 0; j < nsub*nchn; j++)
 		{
 			acfStructure->dynSpec[i][j] = acfStructure->dynSpec[i][j]/sum;
 			//printf ("%d %d\n", i, j);
 		}
 	}
 
+
 	return 0;
 }
 
-int winDynSpec (acfStruct *acfStructure, long seed)
+int winDynSpec (acfStruct *acfStructure, int index)
 {
 	int nchn = acfStructure->nchn;
 	int nsubint = acfStructure->nsubint;
 
 	int i;
-	int j;
 
 	double dynSpecWindow;
+	double dynSpecNoise;
 
 	//printf ("Simulating dynamic spectrum\n");
 	//seed = TKsetSeed();
 	//printf ("seed %ld\n",seed);
 
-	for (i = 0; i < nchn; i++)
+	for (i = 0; i < nchn*nsubint; i++)
 	{
-		for (j = 0; j < nsubint; j++)
-		{
-			dynSpecWindow = acfStructure->dynSpec[i][j];
-			//acfStructure->dynSpecWindow[i][j] = acfStructure->dynSpec[i+nf0][j+ns0];
-			acfStructure->dynPlot[i*nsubint+j] = (float)(dynSpecWindow*acfStructure->cFlux+acfStructure->whiteLevel*TKgaussDev(&seed));   // add in noise here
-			//acfStructure->dynPlot[i*nsubint+j] = (float)(acfStructure->dynSpecWindow[i][j]*acfStructure->cFlux+acfStructure->whiteLevel*TKgaussDev(&seed));   // add in noise here
-			//printf ("noise rand %lf\n",TKgaussDev(&seed));
-			//acfStructure->dynPlot[i*nsubint+j] = (float)(acfStructure->dynSpecWindow[i][j]);
-			//fprintf (fp, "%.10lf  ", acfStructure->dynSpec[i][j]/sum);
-		}
+		dynSpecWindow = acfStructure->dynSpec[index][i];
+		dynSpecNoise = acfStructure->dynSpecNoise[index][i];
+
+		acfStructure->dynPlot[i] = (float)(dynSpecWindow*acfStructure->cFlux + dynSpecNoise);   // add in noise here
 	}
 
 	return 0;
