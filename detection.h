@@ -237,8 +237,6 @@ int calculateScintScale (acfStruct *acfStructure, controlStruct *control)
 //int calculateScintScale (acfStruct *acfStructure, controlStruct *control, long seed)
 {
 	//FILE *fin;
-	int nchn, nsubint;
-
 	//printf ("Starting simulating dynamic spectrum\n");
 	// moved to preAllocateMemory
 	acfStructure->n = control->n; 
@@ -254,8 +252,6 @@ int calculateScintScale (acfStruct *acfStructure, controlStruct *control)
 	acfStructure->nchn = control->nchan;
 	acfStructure->nsubint = control->nsub;
 
-	nchn = acfStructure->nchn;
-	nsubint = acfStructure->nsubint;
 	//printf ("Scintillation bandwidth: %lf (MHz)\n", acfStructure->f0);
 	//printf ("Scintillation time-scale: %lf (s)\n", acfStructure->t0);
 
